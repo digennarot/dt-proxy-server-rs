@@ -15,7 +15,7 @@ env:
 
 jobs:
   build:
-    name: Build ${{ matrix.target }}
+    name: Build ${{ matrix.deb_arch }} package
     strategy:
       fail-fast: true
       matrix:
@@ -67,19 +67,22 @@ jobs:
           mkdir -p dist
           cargo deb --no-build --target ${{ matrix.target }} --output dist/
 
-      - name: Collect this architecture's assets
+      - name: Verify Debian package
         run: |
-          cp "target/${{ matrix.target }}/release/dt-proxy-server" \
-             "dist/dt-proxy-server-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          packages=(dist/*_${{ matrix.deb_arch }}.deb)
+          if [ "${#packages[@]}" -ne 1 ]; then
+            echo "::error::Expected one ${{ matrix.deb_arch }} Debian package, found ${#packages[@]}"
+            exit 1
+          fi
           ls -l dist
-          dpkg-deb --info dist/dt-proxy-server_*_${{ matrix.deb_arch }}.deb
-          dpkg-deb --contents dist/dt-proxy-server_*_${{ matrix.deb_arch }}.deb
+          dpkg-deb --info "${packages[0]}"
+          dpkg-deb --contents "${packages[0]}"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist-${{ matrix.target }}
-          path: dist/*
+          name: debian-${{ matrix.deb_arch }}
+          path: dist/*.deb
           if-no-files-found: error
 
   release:
@@ -103,13 +106,18 @@ jobs:
           ls -l
           cat SHA256SUMS
 
-      - name: Create the GitHub Release
+      - name: Publish Debian packages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          flags=""
-          case "$GITHUB_REF_NAME" in *-*) flags="--prerelease" ;; esac
-          gh release create "$GITHUB_REF_NAME" dist/* \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "dt-proxy-server $GITHUB_REF_NAME" \
-            --generate-notes --verify-tag $flags
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist/*.deb dist/SHA256SUMS \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            flags=""
+            case "$GITHUB_REF_NAME" in *-*) flags="--prerelease" ;; esac
+            gh release create "$GITHUB_REF_NAME" dist/*.deb dist/SHA256SUMS \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "dt-proxy-server $GITHUB_REF_NAME" \
+              --generate-notes --verify-tag $flags
+          fi
