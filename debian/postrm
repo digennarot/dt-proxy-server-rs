@@ -1,0 +1,17 @@
+#!/bin/sh
+# On "purge" remove everything the proxy created at run time, including the
+# secrets file and the service account.
+set -e
+
+#DEBHELPER#
+
+case "$1" in
+    purge)
+        rm -rf /etc/dt-proxy-server /var/lib/dt-proxy-server
+        if getent passwd dt-proxy >/dev/null; then
+            deluser --system --quiet dt-proxy || true
+        fi
+        ;;
+esac
+
+exit 0

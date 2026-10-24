@@ -1,0 +1,115 @@
+name: Release
+
+# Runs when a version tag such as v1.2.3 (or v1.2.3-rc.1) is pushed:
+#   git tag v0.1.0 && git push origin v0.1.0
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          # Oldest LTS runners: the binaries then run on Debian 12 / Ubuntu 22.04 and newer.
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-22.04
+            deb_arch: amd64
+          # Native arm64 runner (free for public repositories). Building natively avoids a
+          # cross toolchain and lets the test suite run on the real architecture.
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-22.04-arm
+            deb_arch: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out the tagged commit
+        uses: actions/checkout@v4
+
+      - name: Tag must match the version in Cargo.toml
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          crate_version="$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)"
+          if [ "$tag_version" != "$crate_version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match Cargo.toml version $crate_version"
+            exit 1
+          fi
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Run the test suite
+        run: cargo test --locked --target ${{ matrix.target }}
+
+      - name: Build the release binary
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Install cargo-deb
+        run: cargo install cargo-deb --locked
+
+      - name: Build the .deb package
+        run: |
+          mkdir -p dist
+          cargo deb --no-build --target ${{ matrix.target }} --output dist/
+
+      - name: Collect this architecture's assets
+        run: |
+          cp "target/${{ matrix.target }}/release/dt-proxy-server" \
+             "dist/dt-proxy-server-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          ls -l dist
+          dpkg-deb --info dist/dt-proxy-server_*_${{ matrix.deb_arch }}.deb
+          dpkg-deb --contents dist/dt-proxy-server_*_${{ matrix.deb_arch }}.deb
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write # create the GitHub Release and upload assets
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: dist-*
+          merge-multiple: true
+
+      - name: Create checksums
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS
+          ls -l
+          cat SHA256SUMS
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          flags=""
+          case "$GITHUB_REF_NAME" in *-*) flags="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "dt-proxy-server $GITHUB_REF_NAME" \
+            --generate-notes --verify-tag $flags

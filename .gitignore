@@ -1,0 +1,6 @@
+/target
+# Runtime files written by the proxy (they contain the DeepL key and proxy token)
+deep-translate-proxy-config.json
+deep-translate-proxy-secrets.json
+*.pem
+/dist

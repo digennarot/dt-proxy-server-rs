@@ -1,0 +1,31 @@
+#!/bin/sh
+# Runs after the files are unpacked. Creates the unprivileged service account and
+# gives it ownership of the config directory (the proxy rewrites config.json and
+# secrets.json there). The generated systemd block below then enables and starts the unit.
+set -e
+
+case "$1" in
+    configure)
+        if ! getent passwd dt-proxy >/dev/null; then
+            adduser --system --group --quiet --no-create-home \
+                --home /var/lib/dt-proxy-server --shell /usr/sbin/nologin dt-proxy
+        fi
+        install -d -o dt-proxy -g dt-proxy -m 0750 /etc/dt-proxy-server
+        for file in config.json secrets.json; do
+            if [ -e "/etc/dt-proxy-server/$file" ]; then
+                chown dt-proxy:dt-proxy "/etc/dt-proxy-server/$file"
+                chmod 0600 "/etc/dt-proxy-server/$file"
+            fi
+        done
+        chown root:root /etc/dt-proxy-server/dt-proxy-server.env
+        chmod 0600 /etc/dt-proxy-server/dt-proxy-server.env
+        if [ -z "$2" ]; then
+            echo "dt-proxy-server installed. Find the one-time setup URL with:"
+            echo "    sudo journalctl -u dt-proxy-server -n 50 --no-pager"
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

@@ -1,0 +1,48 @@
+[Unit]
+Description=Deep Translate Proxy (DeepL proxy for Foundry VTT)
+Documentation=https://github.com/digennarot/dt-proxy-server-rs
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dt-proxy
+Group=dt-proxy
+WorkingDirectory=/var/lib/dt-proxy-server
+Environment=DT_PROXY_CONFIG=/etc/dt-proxy-server/config.json
+Environment=RUST_LOG=info
+# Optional overrides (the leading '-' means: do not fail if the file is missing).
+EnvironmentFile=-/etc/dt-proxy-server/dt-proxy-server.env
+ExecStart=/usr/bin/dt-proxy-server
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+
+# Hardening: the proxy only needs the network and its own config directory.
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/etc/dt-proxy-server
+StateDirectory=dt-proxy-server
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target

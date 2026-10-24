@@ -1,0 +1,25 @@
+{
+  "deploymentMode": "local",
+  "host": "127.0.0.1",
+  "port": 3001,
+  "publicUrl": "",
+  "allowedOrigins": [],
+  "allowNoOrigin": false,
+  "allowInsecureNetwork": false,
+  "behindTrustedProxy": false,
+  "trustProxyHops": 0,
+  "rateLimits": {
+    "windowMs": 60000,
+    "default": 60,
+    "translate": 180,
+    "usage": 240,
+    "languages": 120,
+    "glossaries": 120
+  },
+  "tls": {
+    "enabled": false,
+    "certificateFile": "",
+    "privateKeyFile": ""
+  },
+  "secretsFile": "secrets.json"
+}
