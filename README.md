@@ -63,9 +63,6 @@ systemctl status dt-proxy-server
 curl -s http://127.0.0.1:3001/health
 ```
 
-> A bare binary per architecture (`dt-proxy-server-vX.Y.Z-x86_64-unknown-linux-gnu`, `…-aarch64-unknown-linux-gnu`) is attached to each release as well, for systems
-> without `dpkg`. The `.deb` is the recommended way: it brings the service, the user and the config directory.
-
 ---
 
 ## 2. First start
@@ -258,8 +255,8 @@ To invalidate the old token (for example if it leaked), use the same command wit
 ## 6. Update and uninstall
 
 **Update:** download the new `.deb` as in step 1 and run `sudo apt install ./dt-proxy-server_<version>-1_$(dpkg --print-architecture).deb`. Your
-configuration and secrets are kept (if you edited a config file, `dpkg` asks whether to keep your version: answer **N**,
-keep yours), and the service is restarted.
+configuration and secrets are kept. If `dpkg` asks whether to replace a locally modified config file, choose to keep
+the currently installed version. The service is restarted after the upgrade.
 
 ```bash
 sudo apt remove dt-proxy-server     # remove the program and the service, KEEP /etc/dt-proxy-server (config + secrets)
@@ -294,11 +291,11 @@ the file named by `DT_PROXY_CONFIG`). Flags: `--port=N`, `--show-token`, `--rege
 ## 8. Publishing a release (maintainers)
 
 `.github/workflows/release.yml` runs when a tag `vX.Y.Z` is pushed. It checks that the tag equals the version in
-`Cargo.toml`, then, **in parallel for `x86_64-unknown-linux-gnu` (amd64) and `aarch64-unknown-linux-gnu` (arm64)**, runs the
-tests, builds the release binary and builds the `.deb` with `cargo-deb`. A final job creates one GitHub Release with these
-assets: both `.deb` packages, both binaries and a combined `SHA256SUMS`. The arm64 build runs natively on GitHub's
-`ubuntu-22.04-arm` runner, which is free for public repositories (a private repository needs a paid larger runner there). Tags containing a hyphen
-(`v1.0.0-rc.1`) are published as pre-releases.
+`Cargo.toml`, then builds and tests the `amd64` and `arm64` packages in parallel. The release contains the Debian
+packages named `dt-proxy-server_<version>-1_<architecture>.deb` and a `SHA256SUMS` file. Standalone binaries are not
+published. If a GitHub Release for the tag already exists, the workflow uploads or replaces its package and checksum
+assets rather than failing to create a duplicate release. The arm64 build runs natively on GitHub's
+`ubuntu-22.04-arm` runner. Tags containing a hyphen (`v1.0.0-rc.1`) are published as pre-releases.
 
 ```bash
 # 1. bump `version` in Cargo.toml, commit, push
