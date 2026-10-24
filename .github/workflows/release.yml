@@ -32,7 +32,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Check out the tagged commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Tag must match the version in Cargo.toml
         run: |
@@ -79,7 +79,7 @@ jobs:
           dpkg-deb --contents "${packages[0]}"
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: debian-${{ matrix.deb_arch }}
           path: dist/*.deb
@@ -93,7 +93,7 @@ jobs:
       contents: write # create the GitHub Release and upload assets
     steps:
       - name: Download all build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: dist
           pattern: debian-*
