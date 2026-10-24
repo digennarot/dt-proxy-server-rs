@@ -1,6 +1,6 @@
 [package]
 name = "dt-proxy-server"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "DeepL proxy for the Foundry VTT Deep Translate module (Rust port of dt-proxy-server)"
 license = "MIT"

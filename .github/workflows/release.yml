@@ -96,7 +96,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: dist
-          pattern: dist-*
+          pattern: debian-*
           merge-multiple: true
 
       - name: Create checksums

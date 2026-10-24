@@ -25,11 +25,11 @@ Pre-built packages are published on the
 [**Releases page**](https://github.com/digennarot/dt-proxy-server-rs/releases) for **`amd64`** (x86_64) and **`arm64`**
 (aarch64: Raspberry Pi 4/5 with a 64-bit OS, AWS Graviton, Ampere…), on Linux with glibc ≥ 2.34 (Debian 12, Ubuntu 22.04 and newer).
 
-1. **Find the latest version** on the Releases page and note its tag (for example `v0.1.0`).
+1. **Find the latest version** on the Releases page and note its tag (for example `v0.1.1`).
 2. **Download the package and the checksum file**:
 
    ```bash
-   VERSION=0.1.0                      # replace with the version you want
+   VERSION=0.1.1                      # replace with the version you want
    ARCH="$(dpkg --print-architecture)"  # amd64 or arm64, detected automatically
    cd /tmp
    wget "https://github.com/digennarot/dt-proxy-server-rs/releases/download/v${VERSION}/dt-proxy-server_${VERSION}-1_${ARCH}.deb"
@@ -300,8 +300,8 @@ assets rather than failing to create a duplicate release. The arm64 build runs n
 ```bash
 # 1. bump `version` in Cargo.toml, commit, push
 # 2. tag and push:
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
 The workflow needs no secrets: it uses the automatic `GITHUB_TOKEN` with `contents: write` permission.
